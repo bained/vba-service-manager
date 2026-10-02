@@ -1,0 +1,15 @@
+# The harness reads the sources byte for byte (line counts and the import order
+# end up in the reports), so git must not convert anything on the way in or out.
+*.bas   text eol=crlf
+*.cls   text eol=crlf
+*.frm   text eol=crlf
+*.vbs   text eol=crlf
+*.wsf   text eol=crlf
+*.cmd   text eol=crlf
+*.md    text eol=crlf
+*.txt   text eol=crlf
+
+# Workbooks and the binary half of the UserForms: never diffed, never converted.
+*.xlsx  binary
+*.xlsm  binary
+*.frx   binary

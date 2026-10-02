@@ -1,0 +1,29 @@
+Option Explicit
+
+' ---------------------------------------------------------------------------
+'  Auto start of the application (document module of the built workbook).
+'
+'  tools\build.vbs injects this file into the ThisWorkbook component, because a
+'  document module cannot be imported like a .bas/.cls file. The template is
+'  macro free, so the injection replaces whatever code the module holds.
+'
+'  Nothing else lives here: the sheet events are in clsSheetEvents (one instance
+'  per UI sheet, kept alive by modApp), so there are no stub modules to maintain.
+'
+'  The error handler is deliberate: a run time error inside Workbook_Open would
+'  show a modal dialog before the user sees anything, and a broken contract is
+'  reported by the warning block of the Dashboard instead.
+' ---------------------------------------------------------------------------
+Private Sub Workbook_Open()
+    On Error Resume Next
+    modApp.Boot
+    On Error GoTo 0
+End Sub
+
+' The event instances are released with the session, so the workbook closes
+' without leaving a reference behind.
+Private Sub Workbook_BeforeClose(Cancel As Boolean)
+    On Error Resume Next
+    modApp.Shutdown
+    On Error GoTo 0
+End Sub

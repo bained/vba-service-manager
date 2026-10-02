@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Service_Manager_2 - the fast lane: the rules of the model under cscript.
+
+      cscript //nologo tools\sim\run.wsf
+
+  No Excel and no workbook: the sheets, the named cells and the tables are memory
+  (sim-core.vbs), the rules are the twins of the VBA modules (sim-model.vbs) and
+  the cases are in sim-tests.vbs. The report goes to build\sim-test-report.txt and
+  the exit code is 0 only when every case passed.
+
+  Why this exists and where its border is: tools\sim\README.md.
+
+      cscript //nologo tools\sim\run.wsf [crosscheck]
+
+  The first argument chooses the job:
+      (none)      the tests of the model (build\sim-test-report.txt)
+      crosscheck  the answers to the cases of src\tests\crosscheck.txt
+                  (build\sim-crosscheck.txt), for tools\build.vbs to compare
+                  against the answers of the workbook
+-->
+<job>
+  <script language="VBScript" src="sim-contract.vbs"/>
+  <script language="VBScript" src="sim-core.vbs"/>
+  <script language="VBScript" src="sim-data.vbs"/>
+  <script language="VBScript" src="sim-model.vbs"/>
+  <script language="VBScript" src="sim-crosscheck.vbs"/>
+  <script language="VBScript" src="sim-tests.vbs"/>
+  <script language="VBScript">
+    If WScript.Arguments.Count > 0 Then
+        If LCase(WScript.Arguments(0)) = "crosscheck" Then
+            RunModelCrosscheck
+        Else
+            RunModelTests
+            WScript.Quit TestExitCode()
+        End If
+    Else
+        RunModelTests
+        WScript.Quit TestExitCode()
+    End If
+  </script>
+</job>

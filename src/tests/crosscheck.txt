@@ -1,0 +1,115 @@
+# ---------------------------------------------------------------------------
+#  Service_Manager - the fixtures and the cases of the cross check
+#
+#  One file, two readers:
+#    * tools\sim\run.wsf crosscheck      (the model under cscript)
+#    * modTests.Test_CrossCheck          (inside the workbook)
+#
+#  Both build their data from [config] and [tables], then evaluate every line of
+#  [cases] and write one output line per case to
+#      build\sim-crosscheck.txt   /   build\xls-crosscheck.txt
+#  tools\build.vbs compares the two files line by line: the same fixture must
+#  give the same answer, no matter which implementation computed it.
+#
+#  Line format of a case:   kind|name|arguments
+#  Line format of a result: kind|name|value...   (one line per case, plans one
+#  line per slot, in the same order in both lanes)
+#
+#  kinds: rule       -> the rule code of a booking payload ("" = accepted)
+#         normalise  -> the payload as the validator normalised it
+#         count / revenue / freeday / label / busy / conflict-start
+#         plan       -> the slot plan of a day (what the daily grid shows)
+#         config-rule     -> the rule code of the Config page ("" = it is fine)
+#         config-values   -> the canonical values the page stores (eight, in the
+#                            order of the sheet, joined by "|")
+#         config-defaults -> the built in values of section 16.1
+#         config-dates    -> the non working dates with one day added
+#                            ("day|list in the cell", ISO, in order, no repeats)
+# ---------------------------------------------------------------------------
+
+[config]
+i_config_day_start=09:00
+i_config_day_end=19:00
+i_config_step=5
+i_config_duration=10
+i_config_currency=EUR
+i_config_number_format=#,##0.00
+i_config_nonwork_days=6,7
+i_config_nonwork_dates=2026-09-19
+
+[tables]
+
+[db_clients]
+id,name,phone,email,comment
+1,Ivan Petrov,0888123456,ivan@example.com,
+2,Maria Ivanova,0877654321,maria@example.com,
+
+[db_services]
+id,service,price,duration
+1,Haircut,25.00,30
+2,Hair coloring,60.00,60
+3,Manicure,30.00,45
+
+[db_appointments]
+id,client_id,service_id,date,start,duration
+1,1,1,2026-09-21,09:00,30
+2,2,2,2026-09-22,10:00,60
+3,1,3,2026-09-24,15:00,45
+
+[cases]
+rule|fine|client_id=1;service_id=1;date=2026-09-25;start=15:00;duration=45
+rule|required-client|client_id=0;service_id=1;date=2026-09-25;start=15:00;duration=45
+rule|unknown-client|client_id=99;service_id=1;date=2026-09-25;start=15:00;duration=45
+rule|required-service|client_id=1;service_id=0;date=2026-09-25;start=15:00;duration=45
+rule|unknown-service|client_id=1;service_id=99;date=2026-09-25;start=15:00;duration=45
+rule|required-date|client_id=1;service_id=1;date=;start=15:00;duration=45
+rule|non-working-day|client_id=1;service_id=1;date=2026-09-19;start=15:00;duration=45
+rule|bad-time|client_id=1;service_id=1;date=2026-09-25;start=25:00;duration=45
+rule|required-duration|client_id=1;service_id=1;date=2026-09-25;start=15:00;duration=
+rule|zero-duration|client_id=1;service_id=1;date=2026-09-25;start=15:00;duration=0
+rule|before-the-day|client_id=1;service_id=1;date=2026-09-25;start=08:00;duration=45
+rule|after-the-day|client_id=1;service_id=1;date=2026-09-25;start=18:45;duration=60
+rule|off-step|client_id=1;service_id=1;date=2026-09-25;start=15:07;duration=45
+rule|clash|client_id=1;service_id=1;date=2026-09-21;start=09:15;duration=45
+rule|touching|client_id=1;service_id=1;date=2026-09-21;start=09:30;duration=45
+rule|european-date|client_id=1;service_id=1;date=25.09.2026;start=15:00;duration=45
+rule|slash-date|client_id=1;service_id=1;date=25/09/2026;start=15:00;duration=45
+normalise|iso-values|client_id=1;service_id=1;date=2026-09-25;start=9:5;duration=045
+report|september|2026-09-01|2026-09-30
+report|empty-days|2026-09-01|2026-09-05
+count|2026-09-21
+count|2026-09-25
+revenue|2026-09-21
+revenue|2026-09-22
+freeday|2026-09-21
+label|1
+label|2
+busy|2026-09-21
+conflict-start|2026-09-21|09:15|45
+plan|2026-09-21
+plan|2026-09-24
+plan|2026-09-25
+
+# the Config page (phase 6): the arguments are the cells the user typed over, the
+# [config] block above supplies the rest
+config-rule|fine|
+config-rule|no-opening|i_config_day_start=
+config-rule|bad-opening|i_config_day_start=8h30
+config-rule|day-order|i_config_day_start=20:00
+config-rule|no-step|i_config_step=
+config-rule|step-zero|i_config_step=0
+config-rule|no-duration|i_config_duration=
+config-rule|no-currency|i_config_currency=
+config-rule|bad-format|i_config_number_format=AAA
+config-rule|bad-weekday|i_config_nonwork_days=8
+config-rule|bad-date|i_config_nonwork_dates=nonsense
+config-values|typed|i_config_day_start=8:30;i_config_step=015;i_config_currency=eur;i_config_nonwork_days= 6 , 7 ;i_config_nonwork_dates=25.09.2026
+config-values|iso-dates|i_config_nonwork_dates=25.09.2026, 2026-10-05
+config-values|unsorted-dates|i_config_nonwork_dates=2026-10-05, 25.09.2026
+config-values|repeat-weekdays|i_config_nonwork_days=7, 6 , 7
+config-defaults|sixteen-one|
+config-dates|add-in-middle|2026-09-20|2026-09-25,2026-10-05
+config-dates|add-repeat|2026-09-25|2026-09-25,2026-10-05
+config-dates|add-to-empty|2026-09-25|
+config-dates|add-european|25.09.2026|2026-10-05
+config-dates|add-rubbish|nonsense|2026-09-25
